@@ -1,5 +1,5 @@
 import axios from 'axios'
-
+const REQUEST_ORIGIN = '/screw/api'
 export default {
   getTopAndFeaturedArticles: () => {
     return axios.get('/api/articles/topAndFeatured')
@@ -29,7 +29,7 @@ export default {
     return axios.get('/api/archives/all', { params: params })
   },
   login: (params: any) => {
-    return axios.post('/api/users/login', params)
+    return axios.post(REQUEST_ORIGIN + '/upm/login/signIn', params)
   },
   saveComment: (params: any) => {
     return axios.post('/api/comments/save', params)

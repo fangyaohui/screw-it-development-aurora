@@ -116,334 +116,357 @@
 </template>
 
 <script lang="ts">
-import { computed, defineComponent, toRef, toRefs, reactive, getCurrentInstance, nextTick } from 'vue'
-import { Dropdown, DropdownMenu, DropdownItem } from '@/components/Dropdown'
-import { useAppStore } from '@/stores/app'
-import { useCommonStore } from '@/stores/common'
-import { useUserStore } from '@/stores/user'
-import { useRoute, useRouter } from 'vue-router'
-import ThemeToggle from '@/components/ToggleSwitch/ThemeToggle.vue'
-import api from '@/api/api'
-import SearchModel from '@/components/SearchModel.vue'
-import { useSearchStore } from '@/stores/search'
-import config from '@/config/config'
-import { useI18n } from 'vue-i18n'
-import emitter from '@/utils/mitt'
+  import { computed, defineComponent, toRef, toRefs, reactive, getCurrentInstance, nextTick } from 'vue'
+  import { Dropdown, DropdownMenu, DropdownItem } from '@/components/Dropdown'
+  import { useAppStore } from '@/stores/app'
+  import { useCommonStore } from '@/stores/common'
+  import { useUserStore } from '@/stores/user'
+  import { useRoute, useRouter } from 'vue-router'
+  import ThemeToggle from '@/components/ToggleSwitch/ThemeToggle.vue'
+  import api from '@/api/api'
+  import SearchModel from '@/components/SearchModel.vue'
+  import { useSearchStore } from '@/stores/search'
+  import config from '@/config/config'
+  import { useI18n } from 'vue-i18n'
+  import emitter from '@/utils/mitt'
 
-export default defineComponent({
-  name: 'Controls',
-  components: {
-    Dropdown,
-    DropdownMenu,
-    DropdownItem,
-    ThemeToggle,
-    SearchModel
-  },
-  setup() {
-    const { t } = useI18n()
-    const proxy: any = getCurrentInstance()?.appContext.config.globalProperties
-    const appStore = useAppStore()
-    const commonStore = useCommonStore()
-    const userStore = useUserStore()
-    const searchStore = useSearchStore()
-    const route = useRoute()
-    const router = useRouter()
-    const loginInfo = reactive({
-      username: '' as any,
-      password: '' as any,
-      code: '' as any
-    })
-    const reactiveDate = reactive({
-      loginDialogVisible: false,
-      registerDialogVisible: false,
-      forgetPasswordDialogVisible: false,
-      articlePasswordDialogVisible: false,
-      articlePassword: '',
-      articleId: ''
-    })
-    emitter.on('changeArticlePasswordDialogVisible', (articleId: any) => {
-      reactiveDate.articlePasswordDialogVisible = true
-      reactiveDate.articlePassword = ''
-      reactiveDate.articleId = articleId
-      nextTick(() => {
-        document.getElementById('article-password-input')?.focus()
+  export default defineComponent({
+    name: 'Controls',
+    components: {
+      Dropdown,
+      DropdownMenu,
+      DropdownItem,
+      ThemeToggle,
+      SearchModel
+    },
+    setup () {
+      const { t } = useI18n()
+      const proxy: any = getCurrentInstance()?.appContext.config.globalProperties
+      const appStore = useAppStore()
+      const commonStore = useCommonStore()
+      const userStore = useUserStore()
+      const searchStore = useSearchStore()
+      const route = useRoute()
+      const router = useRouter()
+      const loginInfo = reactive({
+        username: '' as any,
+        password: '' as any,
+        code: '' as any
       })
-    })
-    const handleClick = (name: string): void => {
-      appStore.changeLocale(name)
-    }
-    const login = () => {
-      if (loginInfo.username.trim().length == 0 || loginInfo.password.trim().length == 0) {
-        proxy.$notify({
-          title: 'Warning',
-          message: '账号或者密码不能为空',
-          type: 'warning'
+      const reactiveDate = reactive({
+        loginDialogVisible: false,
+        registerDialogVisible: false,
+        forgetPasswordDialogVisible: false,
+        articlePasswordDialogVisible: false,
+        articlePassword: '',
+        articleId: ''
+      })
+      emitter.on('changeArticlePasswordDialogVisible', (articleId: any) => {
+        reactiveDate.articlePasswordDialogVisible = true
+        reactiveDate.articlePassword = ''
+        reactiveDate.articleId = articleId
+        nextTick(() => {
+          document.getElementById('article-password-input')?.focus()
         })
-        return
+      })
+      const handleClick = (name: string): void => {
+        appStore.changeLocale(name)
       }
-      let params = new URLSearchParams()
-      params.append('username', loginInfo.username)
-      params.append('password', loginInfo.password)
-      api.login(params).then(({ data }) => {
-        if (data.flag) {
-          userStore.userInfo = data.data
-          sessionStorage.setItem('token', data.data.token)
-          userStore.token = data.data.token
+      const login = () => {
+        if (loginInfo.username.trim().length == 0 || loginInfo.password.trim().length == 0) {
           proxy.$notify({
-            title: 'Success',
-            message: '登录成功',
-            type: 'success'
+            title: 'Warning',
+            message: '账号或者密码不能为空',
+            type: 'warning'
           })
-          reactiveDate.loginDialogVisible = false
+          return
         }
-      })
-    }
-    const logout = () => {
-      api.logout().then(({ data }) => {
-        if (data.flag) {
-          userStore.userInfo = ''
-          userStore.token = ''
-          userStore.accessArticles = []
-          sessionStorage.removeItem('token')
-          proxy.$notify({
-            title: 'Success',
-            message: '登出成功',
-            type: 'success'
-          })
-        }
-      })
-    }
-    const openUserCenter = () => {
-      userStore.userVisible = true
-    }
-    const openLoginDialog = () => {
-      reactiveDate.loginDialogVisible = true
-    }
-    const openRegisterDialog = () => {
-      loginInfo.code = ''
-      reactiveDate.loginDialogVisible = false
-      reactiveDate.registerDialogVisible = true
-    }
-    const returnLoginDialog = () => {
-      reactiveDate.registerDialogVisible = false
-      reactiveDate.forgetPasswordDialogVisible = false
-      reactiveDate.loginDialogVisible = true
-    }
-    const openForgetPasswordDialog = () => {
-      loginInfo.code = ''
-      reactiveDate.loginDialogVisible = false
-      reactiveDate.forgetPasswordDialogVisible = true
-    }
-    const sendCode = () => {
-      api.sendValidationCode(loginInfo.username).then(({ data }) => {
-        if (data.flag) {
-          proxy.$notify({
-            title: 'Success',
-            message: '验证码已发送',
-            type: 'success'
-          })
-        }
-      })
-    }
-    const register = () => {
-      let params = {
-        code: loginInfo.code,
-        username: loginInfo.username,
-        password: loginInfo.password
+        let params = new URLSearchParams()
+        params.append('userName', loginInfo.username)
+        params.append('password', loginInfo.password)
+        api.login({
+          "userName": loginInfo.username,
+          "password": loginInfo.password
+        }).then(({ data }) => {
+          alert(JSON.stringify(data.data.blogUserVO))
+          if (data.code === 0) {
+            userStore.userInfo = data.data.blogUserVO
+            sessionStorage.setItem('token', data.data.token)
+            userStore.token = data.data.token
+            proxy.$notify({
+              title: 'Success',
+              message: '登录成功',
+              type: 'success'
+            })
+            reactiveDate.loginDialogVisible = false
+          }
+        })
       }
-      api.register(params).then(({ data }) => {
-        if (data.flag) {
-          proxy.$notify({
-            title: 'Success',
-            message: '注册成功',
-            type: 'success'
-          })
-          reactiveDate.registerDialogVisible = false
-          reactiveDate.loginDialogVisible = true
+      const logout = () => {
+        api.logout().then(({ data }) => {
+          if (data.flag) {
+            userStore.userInfo = ''
+            userStore.token = ''
+            userStore.accessArticles = []
+            sessionStorage.removeItem('token')
+            proxy.$notify({
+              title: 'Success',
+              message: '登出成功',
+              type: 'success'
+            })
+          }
+        })
+      }
+      const openUserCenter = () => {
+        userStore.userVisible = true
+      }
+      const openLoginDialog = () => {
+        reactiveDate.loginDialogVisible = true
+      }
+      const openRegisterDialog = () => {
+        loginInfo.code = ''
+        reactiveDate.loginDialogVisible = false
+        reactiveDate.registerDialogVisible = true
+      }
+      const returnLoginDialog = () => {
+        reactiveDate.registerDialogVisible = false
+        reactiveDate.forgetPasswordDialogVisible = false
+        reactiveDate.loginDialogVisible = true
+      }
+      const openForgetPasswordDialog = () => {
+        loginInfo.code = ''
+        reactiveDate.loginDialogVisible = false
+        reactiveDate.forgetPasswordDialogVisible = true
+      }
+      const sendCode = () => {
+        api.sendValidationCode(loginInfo.username).then(({ data }) => {
+          if (data.flag) {
+            proxy.$notify({
+              title: 'Success',
+              message: '验证码已发送',
+              type: 'success'
+            })
+          }
+        })
+      }
+      const register = () => {
+        let params = {
+          code: loginInfo.code,
+          username: loginInfo.username,
+          password: loginInfo.password
         }
-      })
-    }
-    const handleOpenModel: any = (status: boolean) => {
-      searchStore.setOpenModal(status)
-    }
+        api.register(params).then(({ data }) => {
+          if (data.flag) {
+            proxy.$notify({
+              title: 'Success',
+              message: '注册成功',
+              type: 'success'
+            })
+            reactiveDate.registerDialogVisible = false
+            reactiveDate.loginDialogVisible = true
+          }
+        })
+      }
+      const handleOpenModel: any = (status: boolean) => {
+        searchStore.setOpenModal(status)
+      }
 
-    const qqLogin = () => {
-      userStore.currentUrl = route.path
-      reactiveDate.loginDialogVisible = false
-      if (commonStore.isMobile) {
-        //@ts-ignore
-        QC.Login.showPopup({
-          appId: config.qqLogin.QQ_APP_ID,
-          redirectURI: config.qqLogin.QQ_REDIRECT_URI
-        })
-      } else {
-        window.open(
-          'https://graph.qq.com/oauth2.0/show?which=Login&display=pc&client_id=' +
+      const qqLogin = () => {
+        userStore.currentUrl = route.path
+        reactiveDate.loginDialogVisible = false
+        if (commonStore.isMobile) {
+          //@ts-ignore
+          QC.Login.showPopup({
+            appId: config.qqLogin.QQ_APP_ID,
+            redirectURI: config.qqLogin.QQ_REDIRECT_URI
+          })
+        } else {
+          window.open(
+            'https://graph.qq.com/oauth2.0/show?which=Login&display=pc&client_id=' +
             +config.qqLogin.QQ_APP_ID +
             '&response_type=token&scope=all&redirect_uri=' +
             config.qqLogin.QQ_REDIRECT_URI,
-          '_self'
-        )
-      }
-    }
-    const updatePassword = () => {
-      api.updatePassword(loginInfo).then(({ data }) => {
-        if (data.flag) {
-          proxy.$notify({
-            title: 'Success',
-            message: '修改成功',
-            type: 'success'
-          })
-          reactiveDate.forgetPasswordDialogVisible = false
-          reactiveDate.loginDialogVisible = true
+            '_self'
+          )
         }
-      })
-    }
-    const accessArticle = () => {
-      if (reactiveDate.articlePassword.trim().length == 0) {
-        proxy.$notify({
-          title: 'Warning',
-          message: '密码不能为空',
-          type: 'warning'
-        })
-        return
       }
-      api
-        .accessArticle({
-          articleId: reactiveDate.articleId,
-          articlePassword: reactiveDate.articlePassword
-        })
-        .then(({ data }) => {
+      const updatePassword = () => {
+        api.updatePassword(loginInfo).then(({ data }) => {
           if (data.flag) {
-            reactiveDate.articlePasswordDialogVisible = false
-            userStore.accessArticles.push(reactiveDate.articleId)
-            router.push({ path: '/articles/' + reactiveDate.articleId })
+            proxy.$notify({
+              title: 'Success',
+              message: '修改成功',
+              type: 'success'
+            })
+            reactiveDate.forgetPasswordDialogVisible = false
+            reactiveDate.loginDialogVisible = true
           }
         })
+      }
+      const accessArticle = () => {
+        if (reactiveDate.articlePassword.trim().length == 0) {
+          proxy.$notify({
+            title: 'Warning',
+            message: '密码不能为空',
+            type: 'warning'
+          })
+          return
+        }
+        api
+          .accessArticle({
+            articleId: reactiveDate.articleId,
+            articlePassword: reactiveDate.articlePassword
+          })
+          .then(({ data }) => {
+            if (data.flag) {
+              reactiveDate.articlePasswordDialogVisible = false
+              userStore.accessArticles.push(reactiveDate.articleId)
+              router.push({ path: '/articles/' + reactiveDate.articleId })
+            }
+          })
+      }
+      return {
+        handleOpenModel,
+        loginInfo,
+        ...toRefs(reactiveDate),
+        userInfo: toRef(userStore.$state, 'userInfo'),
+        isMobile: toRef(commonStore.$state, 'isMobile'),
+        login,
+        qqLogin,
+        logout,
+        handleClick,
+        openUserCenter,
+        openLoginDialog,
+        openRegisterDialog,
+        returnLoginDialog,
+        sendCode,
+        register,
+        updatePassword,
+        openForgetPasswordDialog,
+        accessArticle,
+        multiLanguage: computed(() => {
+          let websiteConfig: any = appStore.websiteConfig
+          return websiteConfig.multiLanguage
+        }),
+        t
+      }
     }
-    return {
-      handleOpenModel,
-      loginInfo,
-      ...toRefs(reactiveDate),
-      userInfo: toRef(userStore.$state, 'userInfo'),
-      isMobile: toRef(commonStore.$state, 'isMobile'),
-      login,
-      qqLogin,
-      logout,
-      handleClick,
-      openUserCenter,
-      openLoginDialog,
-      openRegisterDialog,
-      returnLoginDialog,
-      sendCode,
-      register,
-      updatePassword,
-      openForgetPasswordDialog,
-      accessArticle,
-      multiLanguage: computed(() => {
-        let websiteConfig: any = appStore.websiteConfig
-        return websiteConfig.multiLanguage
-      }),
-      t
-    }
-  }
-})
+  })
 </script>
 <style lang="scss">
-.my-el-button {
-  width: 300px !important;
-}
-.el-button {
-  width: 300px;
-}
-.el-dialog__headerbtn {
-  outline: none !important;
-}
-.el-input-group__append {
-  background-color: var(--background-primary-alt) !important;
-}
-.el-form-item__label {
-  text-align: left;
-  width: 70px;
-  color: var(--text-normal) !important;
-}
-.el-input__inner {
-  color: var(--text-normal) !important;
-  background-color: var(--background-primary-alt) !important;
-}
-.el-input__wrapper {
-  background: var(--background-primary-alt) !important;
-}
+  .my-el-button {
+    width: 300px !important;
+  }
+
+  .el-button {
+    width: 300px;
+  }
+
+  .el-dialog__headerbtn {
+    outline: none !important;
+  }
+
+  .el-input-group__append {
+    background-color: var(--background-primary-alt) !important;
+  }
+
+  .el-form-item__label {
+    text-align: left;
+    width: 70px;
+    color: var(--text-normal) !important;
+  }
+
+  .el-input__inner {
+    color: var(--text-normal) !important;
+    background-color: var(--background-primary-alt) !important;
+  }
+
+  .el-input__wrapper {
+    background: var(--background-primary-alt) !important;
+  }
 </style>
 <style lang="scss" scoped>
-.text {
-  color: var(--text-normal);
-  cursor: pointer;
-}
-#submit-button {
-  outline: none;
-  background: #0fb6d6;
-}
-.header-controls {
-  span {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #fff;
+  .text {
+    color: var(--text-normal);
     cursor: pointer;
-    transition: opacity 250ms ease;
-    padding-right: 0.5rem;
-    &[no-hover-effect] {
+  }
+
+  #submit-button {
+    outline: none;
+    background: #0fb6d6;
+  }
+
+  .header-controls {
+    span {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 250ms ease;
+      padding-right: 0.5rem;
+
+      &[no-hover-effect] {
+        &:hover {
+          opacity: 1;
+        }
+      }
+
       &:hover {
-        opacity: 1;
+        opacity: 0.5;
+      }
+
+      .svg-icon {
+        stroke: #fff;
+        height: 2rem;
+        width: 2rem;
+        margin-right: 0.5rem;
+        pointer-events: none;
       }
     }
-    &:hover {
-      opacity: 0.5;
-    }
-    .svg-icon {
-      stroke: #fff;
-      height: 2rem;
-      width: 2rem;
-      margin-right: 0.5rem;
-      pointer-events: none;
-    }
-  }
-  .search-bar {
-    @apply bg-transparent flex flex-row px-0 mr-2 rounded-full;
-    opacity: 0;
-    width: 0;
-    transition: 300ms all ease-out;
-    &.active {
-      @apply bg-ob-deep-800;
-      opacity: 0.95;
-      width: 200px;
-      imput {
-        width: initial;
-      }
-    }
-    &:focus {
-      appearance: none;
-      outline: none;
-    }
-    input {
-      @apply flex flex-1 bg-transparent text-ob-normal px-6 box-border;
+
+    .search-bar {
+      @apply bg-transparent flex flex-row px-0 mr-2 rounded-full;
+      opacity: 0;
       width: 0;
-      appearance: none;
-      outline: none;
-    }
-    svg {
-      @apply float-right;
+      transition: 300ms all ease-out;
+
+      &.active {
+        @apply bg-ob-deep-800;
+        opacity: 0.95;
+        width: 200px;
+
+        imput {
+          width: initial;
+        }
+      }
+
+      &:focus {
+        appearance: none;
+        outline: none;
+      }
+
+      input {
+        @apply flex flex-1 bg-transparent text-ob-normal px-6 box-border;
+        width: 0;
+        appearance: none;
+        outline: none;
+      }
+
+      svg {
+        @apply float-right;
+      }
     }
   }
-}
-.avatar-img {
-  transition-property: transform;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 800ms;
-  transform: rotate(-360deg);
-}
-.avatar-img:hover {
-  transform: rotate(360deg);
-}
+
+  .avatar-img {
+    transition-property: transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 800ms;
+    transform: rotate(-360deg);
+  }
+
+  .avatar-img:hover {
+    transform: rotate(360deg);
+  }
 </style>

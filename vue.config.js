@@ -1,6 +1,6 @@
 const path = require('path')
 const { defineConfig } = require('@vue/cli-service')
-function resolve(dir) {
+function resolve (dir) {
   return path.join(__dirname, dir)
 }
 module.exports = defineConfig({
@@ -8,11 +8,11 @@ module.exports = defineConfig({
   productionSourceMap: false,
   devServer: {
     proxy: {
-      '/api': {
-        target: 'https://www.linhaojun.top/api',
+      '/screw': {
+        target: 'http://localhost:61237',
         changeOrigin: true,
         pathRewrite: {
-          '^/api': ''
+          '^/screw': ''
         }
       }
     }
